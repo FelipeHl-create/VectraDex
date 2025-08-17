@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Login - VectraDex</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+	<link rel="stylesheet" href="/static/styles.css?v=1" />
+</head>
+<body>
+	<header>
+		<h1><img src="/static/logo.svg" alt="VectraDex"/>VectraDex</h1>
+		<nav>
+			<a href="/">Início</a>
+			<a href="/docs" target="_blank">API Docs</a>
+		</nav>
+	</header>
+	<main style="max-width:420px;margin:40px auto;">
+		<h2>Login</h2>
+		<form id="form">
+			<label>Email<br><input type="email" id="email" required></label><br><br>
+			<label>Senha<br><input type="password" id="password" required></label><br><br>
+			<button type="submit" class="btn">Entrar</button>
+		</form>
+		<p id="msg"></p>
+	</main>
+	<script>
+	document.getElementById('form').addEventListener('submit', async (e)=>{
+		e.preventDefault();
+		const email = document.getElementById('email').value;
+		const password = document.getElementById('password').value;
+		try{
+			const res = await fetch('/api/auth/login', {
+				method:'POST', headers:{'Content-Type':'application/json'},
+				body: JSON.stringify({email, password})
+			});
+			if(!res.ok){ throw new Error('Falha no login'); }
+			const data = await res.json();
+			localStorage.setItem('token', data.access_token);
+			location.href = '/';
+		}catch(err){
+			document.getElementById('msg').textContent = 'Credenciais inválidas';
+		}
+	});
+	</script>
+</body>
+</html>

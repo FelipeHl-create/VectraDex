@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Produtos - VectraDex</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+	<link rel="stylesheet" href="/static/styles.css?v=1" />
+</head>
+<body>
+	<div class="layout">
+		<aside class="sidebar">
+			<div class="brand"><img src="/static/logo.svg" alt="VectraDex"/><span>VectraDex</span></div>
+			<nav>
+				<a href="/" data-match="^/$">Dashboard</a>
+				<a href="/produtos" data-match="^/produtos" class="active">Produtos</a>
+				<a href="/maquinas" data-match="^/maquinas">Máquinas</a>
+				<a href="/dashboard" data-match="^/dashboard">Gráficos</a>
+				<a href="/docs" target="_blank">API Docs</a>
+			</nav>
+		</aside>
+		<main class="content" style="max-width:900px;margin:20px auto;">
+		<h2>Produtos</h2>
+		<div>
+			<input id="q" placeholder="Buscar..."/> <button id="search" class="btn">Buscar</button>
+		</div>
+		<table id="tbl">
+			<thead><tr><th>ID</th><th>Código</th><th>Nome</th><th>Qtd</th><th>Un</th><th>Local</th><th>Etiqueta</th></tr></thead>
+			<tbody></tbody>
+		</table>
+		<h3>Novo Produto</h3>
+		<div>
+			<input id="code" placeholder="Código"/>
+			<input id="name" placeholder="Nome"/>
+			<input id="quantity" type="number" placeholder="Quantidade" value="0"/>
+			<input id="unit" placeholder="Unidade" value="un"/>
+			<input id="location" placeholder="Localização"/>
+			<button id="create" class="btn">Criar</button>
+			<span id="msg"></span>
+		</div>
+		</main>
+	</div>
+	<script>
+	const token = localStorage.getItem('token');
+	function authHeaders(){ return token ? {Authorization: 'Bearer '+token} : {}; }
+	async function load(){
+		const q = document.getElementById('q').value;
+		const res = await fetch('/api/products/?q='+(q||''), {headers: authHeaders()});
+		const data = await res.json();
+		const tb = document.querySelector('#tbl tbody');
+		tb.innerHTML = '';
+		for(const p of data){
+			const tr = document.createElement('tr');
+			tr.innerHTML = `<td>${p.id}</td><td>${p.code}</td><td>${p.name}</td><td>${p.quantity}</td><td>${p.unit}</td><td>${p.location||''}</td><td><a target="_blank" href="/api/labels/${p.id}/png?decrement_qty=1">Imprimir -1</a></td>`;
+			tb.appendChild(tr);
+		}
+	}
+	document.getElementById('search').addEventListener('click', load);
+	document.getElementById('create').addEventListener('click', async ()=>{
+		const body = {
+			code: document.getElementById('code').value,
+			name: document.getElementById('name').value,
+			description: '',
+			quantity: parseInt(document.getElementById('quantity').value,10)||0,
+			unit: document.getElementById('unit').value || 'un',
+			location: document.getElementById('location').value || null
+		};
+		const res = await fetch('/api/products/', {method:'POST', headers: {'Content-Type':'application/json', ...authHeaders()}, body: JSON.stringify(body)});
+		if(!res.ok){ document.getElementById('msg').textContent = 'Erro ao criar'; return; }
+		document.getElementById('msg').textContent = 'Criado';
+		load();
+	});
+	(function(){
+		const path = location.pathname;
+		document.querySelectorAll('.sidebar nav a[data-match]')
+			.forEach(a=>{ const rx = new RegExp(a.getAttribute('data-match')); if(rx.test(path)) a.classList.add('active'); else a.classList.remove('active'); });
+	})();
+
+	load();
+	</script>
+</body>
+</html>

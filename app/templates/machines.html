@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Máquinas - VectraDex</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+	<link rel="stylesheet" href="/static/styles.css?v=1" />
+</head>
+<body>
+	<div class="layout">
+		<aside class="sidebar">
+			<div class="brand"><img src="/static/logo.svg" alt="VectraDex"/><span>VectraDex</span></div>
+			<nav>
+				<a href="/" data-match="^/$">Dashboard</a>
+				<a href="/produtos" data-match="^/produtos">Produtos</a>
+				<a href="/maquinas" data-match="^/maquinas" class="active">Máquinas</a>
+				<a href="/dashboard" data-match="^/dashboard">Gráficos</a>
+				<a href="/docs" target="_blank">API Docs</a>
+			</nav>
+		</aside>
+		<main class="content" style="max-width:900px;margin:20px auto;">
+		<h2>Máquinas</h2>
+		<div>
+			<button id="refresh" class="btn">Atualizar Status</button>
+		</div>
+		<table id="tbl">
+			<thead><tr><th>ID</th><th>Nome</th><th>Local</th><th>Status</th><th>Motivo Parada</th><th>Ações</th></tr></thead>
+			<tbody></tbody>
+		</table>
+		</main>
+	</div>
+	<script>
+	async function load(){
+		const res = await fetch('/api/machines/status');
+		const data = await res.json();
+		const tb = document.querySelector('#tbl tbody');
+		tb.innerHTML = '';
+		for(const m of data){
+			const tr = document.createElement('tr');
+			tr.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td>${m.location||''}</td><td>${m.status}</td><td>${m.stop_reason||''}</td><td><button data-id="${m.id}" class="parar">Parar (falta_material)</button></td>`;
+			tb.appendChild(tr);
+		}
+		document.querySelectorAll('.parar').forEach(btn=>{
+			btn.addEventListener('click', async ()=>{
+				const id = btn.getAttribute('data-id');
+				await fetch(`/api/machines/${id}/stop?reason=falta_material`, {method:'POST'});
+				load();
+			});
+		});
+	}
+	document.getElementById('refresh').addEventListener('click', load);
+	load();
+	setInterval(load, 5000);
+	</script>
+</body>
+</html>

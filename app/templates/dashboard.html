@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Dashboard - VectraDex</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+	<link rel="stylesheet" href="/static/styles.css?v=1" />
+	<style>
+		/* Mantém override específico se necessário */
+	</style>
+</head>
+<body>
+	<div class="layout">
+		<aside class="sidebar">
+			<div class="brand"><img src="/static/logo.svg" alt="VectraDex"/><span>VectraDex</span></div>
+			<nav>
+				<a href="/" data-match="^/$">Dashboard</a>
+				<a href="/produtos" data-match="^/produtos">Produtos</a>
+				<a href="/maquinas" data-match="^/maquinas">Máquinas</a>
+				<a href="/dashboard" data-match="^/dashboard" class="active">Gráficos</a>
+				<a href="/docs" target="_blank">API Docs</a>
+			</nav>
+		</aside>
+		<main class="content" style="max-width:1000px;margin:20px auto;">
+		<h2>Dashboard</h2>
+		<div class="grid-cards" id="kpis">
+			<div class="kpi-card kpi-blue">
+				<div class="kpi-title">Receita Operacional</div>
+				<div class="kpi-value" id="kpi-produced">0</div>
+				<div class="kpi-sub" id="kpi-produced-sub">Últimos 7 dias</div>
+				<canvas class="spark" id="spark-produced"></canvas>
+			</div>
+			<div class="kpi-card kpi-green">
+				<div class="kpi-title">Tempo Operando</div>
+				<div class="kpi-value" id="kpi-operating">0d</div>
+				<div class="kpi-sub">Janela de 7 dias</div>
+				<canvas class="spark" id="spark-operating"></canvas>
+			</div>
+			<div class="kpi-card kpi-pink">
+				<div class="kpi-title">% MC Geral</div>
+				<div class="kpi-value" id="kpi-stops">0%</div>
+				<div class="kpi-sub">Paradas / Operação</div>
+				<canvas class="spark" id="spark-stops"></canvas>
+			</div>
+		</div>
+
+		<div class="grid-2" style="margin-top:16px;">
+			<div class="panel">
+				<h3>Produção (últimos dias)</h3>
+				<canvas id="prod" width="600" height="280"></canvas>
+			</div>
+			<div class="panel">
+				<h3>Motivos de Parada</h3>
+				<table class="table" id="reasons"></table>
+			</div>
+		</div>
+		</main>
+	</div>
+	<script>
+	function money(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0)}
+	function pct(v){return (Math.round((v||0)*1000)/10)+'%'}
+
+	async function load(){
+		const m = await (await fetch('/api/dashboard/metrics')).json();
+		// KPIs
+		document.getElementById('kpi-produced').textContent = money(m.produced_qty);
+		document.getElementById('kpi-operating').textContent = (m.total_operating_time_days||0).toFixed(1)+'d';
+		const ratio = (m.total_operating_time_days||0) + (m.total_stopped_time_days||0) > 0
+			? (m.total_operating_time_days / ((m.total_operating_time_days)+(m.total_stopped_time_days)))
+			: 0;
+		document.getElementById('kpi-stops').textContent = pct(1-ratio);
+
+		// Reasons table
+		const rtbl = document.getElementById('reasons');
+		rtbl.innerHTML = '<thead><tr><th>Motivo</th><th>Qtd</th><th>%</th></tr></thead><tbody></tbody>';
+		const totalStops = Object.values(m.stop_reasons||{}).reduce((a,b)=>a+(b||0),0) || 1;
+		for(const [reason,count] of Object.entries(m.stop_reasons||{})){
+			const tr = document.createElement('tr');
+			const pr = Math.round((count/totalStops)*100);
+			tr.innerHTML = `<td>${reason}</td><td>${count}</td><td style="min-width:160px"><div class='progress'><span style='width:${pr}%' /></div></td>`;
+			rtbl.querySelector('tbody').appendChild(tr);
+		}
+
+		// Timeseries charts
+		const t = await (await fetch('/api/dashboard/timeseries?days=30')).json();
+		drawAreaChart(document.getElementById('prod'), t.produced.labels, t.produced.values, ['#22d3ee','#3b82f6']);
+		// Sparklines
+		drawSpark(document.getElementById('spark-produced'), t.produced.values, '#22d3ee');
+		drawSpark(document.getElementById('spark-operating'), [ratio*100, 100*ratio*0.9, 100*ratio], '#34d399');
+		drawSpark(document.getElementById('spark-stops'), t.stops.values, '#ec4899');
+	}
+
+	function drawSpark(canvas, values, color){
+		const ctx = canvas.getContext('2d');
+		const w = canvas.width = canvas.clientWidth; const h = canvas.height = canvas.clientHeight;
+		ctx.clearRect(0,0,w,h);
+		const pad = 6; const W = w - pad*2; const H = h - pad*2; const maxV = Math.max(1, ...values);
+		ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+		values.forEach((v,i)=>{
+			const x = pad + (i/(values.length-1||1))*W; const y = pad + H - (v/maxV)*H; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+		});
+		ctx.stroke();
+	}
+
+	function drawAreaChart(canvas, labels, values, gradientColors){
+		const ctx = canvas.getContext('2d');
+		ctx.clearRect(0,0,canvas.width,canvas.height);
+		const pad = 40; const W = canvas.width - pad*2; const H = canvas.height - pad*2;
+		const maxV = Math.max(10, ...values);
+		// Eixos
+		ctx.strokeStyle = '#294'; ctx.beginPath();
+		ctx.moveTo(pad, pad); ctx.lineTo(pad, pad+H); ctx.lineTo(pad+W, pad+H); ctx.strokeStyle = '#1f2a44'; ctx.stroke();
+		// Área com gradiente
+		const grad = ctx.createLinearGradient(0, pad, 0, pad+H);
+		grad.addColorStop(0, gradientColors[0]+'AA');
+		grad.addColorStop(1, 'transparent');
+		ctx.fillStyle = grad;
+		ctx.strokeStyle = gradientColors[1];
+		ctx.beginPath();
+		values.forEach((v,i)=>{
+			const x = pad + (i/(values.length-1||1))*W; const y = pad + H - (v/maxV)*H; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+		});
+		ctx.lineTo(pad+W, pad+H); ctx.lineTo(pad, pad+H); ctx.closePath(); ctx.fill();
+		// Linha superior
+		ctx.beginPath();
+		values.forEach((v,i)=>{
+			const x = pad + (i/(values.length-1||1))*W; const y = pad + H - (v/maxV)*H; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+		});
+		ctx.lineWidth = 2; ctx.stroke();
+		// X labels
+		ctx.fillStyle = '#9aa7bd'; ctx.font = '10px sans-serif';
+		labels.forEach((lb,i)=>{ const x = pad + (i/(labels.length-1||1))*W; ctx.fillText(String(lb).slice(5), x-10, pad+H+12); });
+	}
+
+	(function(){
+		const path = location.pathname;
+		document.querySelectorAll('.sidebar nav a[data-match]')
+			.forEach(a=>{ const rx = new RegExp(a.getAttribute('data-match')); if(rx.test(path)) a.classList.add('active'); else a.classList.remove('active'); });
+	})();
+
+	load();
+	</script>
+</body>
+</html>
