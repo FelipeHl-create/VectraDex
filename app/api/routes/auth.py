@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from ...schemas.user import UserCreate, UserOut, LoginRequest, Token
 from ...models.user import User, UserRole
@@ -16,6 +16,8 @@ import json
 import os
 
 router = APIRouter()
+_attempts: dict[str, list[float]] = {}
+_lockout_until: dict[str, float] = {}
 
 
 @router.post("/register", response_model=UserOut)
@@ -36,10 +38,39 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    from ...core.config import settings
+
+    ip = request.client.host if request.client else "unknown"
+    key_ip = f"ip:{ip}"
+    key_user = f"user:{data.email.lower()}"
+    now = datetime.now(timezone.utc).timestamp()
+
+    # Verifica lockout
+    for key in (key_ip, key_user):
+        until = _lockout_until.get(key, 0)
+        if now < until:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Tente novamente mais tarde")
+
+    window = settings.LOGIN_WINDOW_SECONDS
+    max_attempts = settings.LOGIN_MAX_ATTEMPTS
+    lockout = settings.LOGIN_LOCKOUT_SECONDS
+
+    def _register_attempt(k: str, success: bool) -> None:
+        arr = _attempts.setdefault(k, [])
+        cutoff = now - window
+        arr[:] = [t for t in arr if t >= cutoff]
+        if not success:
+            arr.append(now)
+            if len(arr) >= max_attempts:
+                _lockout_until[k] = now + lockout
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.hashed_password):
+        _register_attempt(key_ip, False)
+        _register_attempt(key_user, False)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
+    _attempts.pop(key_user, None)
+    _lockout_until.pop(key_user, None)
     token = create_access_token(subject=user.email)
     # Define cookie HttpOnly para reduzir risco XSS
     response = JSONResponse(content=Token(access_token=token).model_dump())

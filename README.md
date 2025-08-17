@@ -76,6 +76,9 @@ vectradex/
 - Não registre segredos nos logs.
 - Rotacione chaves comprometidas imediatamente e limpe históricos (BFG/git-filter-repo) se necessário.
 
+### Rate limiting
+O endpoint de login possui limite de tentativas por IP e por usuário (janela/bloqueio configuráveis em `app/core/config.py` via env: `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `LOGIN_LOCKOUT_SECONDS`).
+
 ### Pre-commit (opcional, recomendado)
 Instale pre-commit e ative o conjunto de hooks configurado:
 ```bash

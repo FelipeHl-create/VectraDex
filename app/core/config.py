@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = ""
     COOKIE_SECURE: bool = False
     HSTS_ENABLED: bool = False
+    # Rate limiting login
+    LOGIN_MAX_ATTEMPTS: int = 5
+    LOGIN_WINDOW_SECONDS: int = 600  # 10min
+    LOGIN_LOCKOUT_SECONDS: int = 900  # 15min
     # Segredo separado para fluxo de recuperação de senha
     PASSWORD_RESET_SECRET: str | None = None
 
