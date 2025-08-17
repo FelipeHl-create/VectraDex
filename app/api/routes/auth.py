@@ -46,7 +46,12 @@ def forgot_password(email: str, db: Session = Depends(get_db)):
         return {"message": "Se existir, um email de recuperação será enviado."}
     # Gera token de redefinição com expiração curta (30 min)
     expire = datetime.now(timezone.utc) + timedelta(minutes=30)
-    token = jwt.encode({"sub": user.email, "purpose": "reset", "exp": expire}, "change-me", algorithm="HS256")
+    from ...core.config import settings
+    token = jwt.encode(
+        {"sub": user.email, "purpose": "reset", "exp": expire},
+        settings.PASSWORD_RESET_SECRET,
+        algorithm="HS256",
+    )
     os.makedirs("data", exist_ok=True)
     with open("data/password_reset_tokens.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({"email": user.email, "token": token, "created_at": datetime.utcnow().isoformat()}) + "\n")
@@ -57,7 +62,8 @@ def forgot_password(email: str, db: Session = Depends(get_db)):
 def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
     # Valida token
     try:
-        payload = jwt.decode(token, "change-me", algorithms=["HS256"])  # Deve casar com chave usada na geração
+        from ...core.config import settings
+        payload = jwt.decode(token, settings.PASSWORD_RESET_SECRET, algorithms=["HS256"])  # Deve casar com a geração
     except Exception:
         raise HTTPException(status_code=400, detail="Token inválido ou expirado")
     if payload.get("purpose") != "reset" or "sub" not in payload:

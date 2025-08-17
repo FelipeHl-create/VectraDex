@@ -33,11 +33,17 @@ Páginas da interface:
 
 APIs: `http://localhost:8000/docs`
 
-## Configuração por ambiente (opcional)
-Crie um arquivo `.env` na raiz do projeto se quiser customizar:
+## Configuração por ambiente
+Crie um arquivo `.env` na raiz do projeto (use como referência os campos abaixo) e NUNCA commit esse arquivo:
 ```
+# Omitir para gerar segredo aleatório em runtime (recomendado em dev)
+SECRET_KEY=
+PASSWORD_RESET_SECRET=
+ACCESS_TOKEN_EXPIRE_MINUTES=120
+ALGORITHM=HS256
 DATABASE_URL=sqlite:///./vectradex.db
-CORS_ORIGINS=*
+# Produção: defina apenas domínios confiáveis (ex.: https://app.suaempresa.com)
+CORS_ORIGINS=http://localhost:8000
 ```
 
 ## Estrutura do projeto
@@ -62,6 +68,13 @@ vectradex/
 - Produtos XLSX: `/api/export/products/xlsx`
 - Produção CSV: `/api/export/production/csv`
 - Produção XLSX: `/api/export/production/xlsx`
+
+## Segurança e boas práticas
+- Nunca exponha segredos (chaves/API/credenciais) no repositório ou na UI.
+- Use `.env` em desenvolvimento e Secrets do repositório/Actions em CI/CD.
+- Restrinja `CORS_ORIGINS` a domínios específicos em produção.
+- Não registre segredos nos logs.
+- Rotacione chaves comprometidas imediatamente e limpe históricos (BFG/git-filter-repo) se necessário.
 
 ## Dicas e solução de problemas
 - Execução de script bloqueada (Windows PowerShell):
