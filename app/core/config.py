@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = ""
     COOKIE_SECURE: bool = False
     HSTS_ENABLED: bool = False
+    FORCE_HTTPS: bool = False
+    LOG_JSON: bool = True
     # Rate limiting login
     LOGIN_MAX_ATTEMPTS: int = 5
     LOGIN_WINDOW_SECONDS: int = 600  # 10min

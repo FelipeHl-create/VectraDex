@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from .core.config import settings
 from .api.api_v1 import api_router
@@ -28,6 +29,10 @@ app.add_middleware(
 # Headers de segurança básicos
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        # Redireciona HTTP->HTTPS quando ativado em produção
+        if settings.FORCE_HTTPS and request.url.scheme == "http":
+            https_url = request.url.replace(scheme="https")
+            return RedirectResponse(url=str(https_url), status_code=307)
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
