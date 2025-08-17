@@ -3,9 +3,15 @@ from sqlalchemy.orm import Session
 from ...schemas.user import UserCreate, UserOut, LoginRequest, Token
 from ...models.user import User, UserRole
 from ...core.security import hash_password, verify_password, create_access_token
+from fastapi.responses import JSONResponse
 from ..deps import get_db
 from datetime import datetime, timedelta, timezone
 from jose import jwt
+@router.post("/logout")
+def logout():
+    resp = JSONResponse(content={"message": "ok"})
+    resp.set_cookie(key="access_token", value="", max_age=0, expires=0, path="/")
+    return resp
 import json
 import os
 
@@ -35,7 +41,18 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
     token = create_access_token(subject=user.email)
-    return Token(access_token=token)
+    # Define cookie HttpOnly para reduzir risco XSS
+    response = JSONResponse(content=Token(access_token=token).model_dump())
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # altere para True em produção com HTTPS
+        samesite="Lax",
+        max_age=60 * 60 * 2,
+        path="/",
+    )
+    return response
 
 
 @router.post("/password/forgot")

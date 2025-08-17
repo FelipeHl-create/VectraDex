@@ -32,7 +32,7 @@
 	</div>
 	<script>
 	async function load(){
-		const res = await fetch('/api/machines/status');
+		const res = await fetch('/api/machines/status', {credentials: 'include'});
 		const data = await res.json();
 		const tb = document.querySelector('#tbl tbody');
 		tb.innerHTML = '';

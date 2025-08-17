@@ -41,11 +41,14 @@
 		</main>
 	</div>
 	<script>
-	const token = localStorage.getItem('token');
-	function authHeaders(){ return token ? {Authorization: 'Bearer '+token} : {}; }
+	function authHeaders(){
+		const token = localStorage.getItem('token');
+		const h = token ? {Authorization: 'Bearer '+token} : {};
+		return h;
+	}
 	async function load(){
 		const q = document.getElementById('q').value;
-		const res = await fetch('/api/products/?q='+(q||''), {headers: authHeaders()});
+		const res = await fetch('/api/products/?q='+(q||''), {headers: authHeaders(), credentials: 'include'});
 		const data = await res.json();
 		const tb = document.querySelector('#tbl tbody');
 		tb.innerHTML = '';
@@ -65,7 +68,7 @@
 			unit: document.getElementById('unit').value || 'un',
 			location: document.getElementById('location').value || null
 		};
-		const res = await fetch('/api/products/', {method:'POST', headers: {'Content-Type':'application/json', ...authHeaders()}, body: JSON.stringify(body)});
+		const res = await fetch('/api/products/', {method:'POST', headers: {'Content-Type':'application/json', ...authHeaders()}, credentials: 'include', body: JSON.stringify(body)});
 		if(!res.ok){ document.getElementById('msg').textContent = 'Erro ao criar'; return; }
 		document.getElementById('msg').textContent = 'Criado';
 		load();
