@@ -5,11 +5,13 @@ from sqlalchemy import func
 from ...models.machine import ProductionEvent, StopReason
 from ...models.product import Product
 from ..deps import get_db
+from ..deps import require_roles
+from ...models.user import UserRole
 
 router = APIRouter()
 
 
-@router.get("/metrics")
+@router.get("/metrics", dependencies=[Depends(require_roles(UserRole.admin, UserRole.gerente))])
 def metrics(db: Session = Depends(get_db)):
     now = datetime.utcnow()
     window_start = now - timedelta(days=7)
@@ -45,8 +47,7 @@ def metrics(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/timeseries")
-
+@router.get("/timeseries", dependencies=[Depends(require_roles(UserRole.admin, UserRole.gerente, UserRole.operador))])
 def timeseries(
     db: Session = Depends(get_db),
     days: int = Query(default=14, ge=1, le=90),

@@ -76,6 +76,14 @@ vectradex/
 - Não registre segredos nos logs.
 - Rotacione chaves comprometidas imediatamente e limpe históricos (BFG/git-filter-repo) se necessário.
 
+### Pre-commit (opcional, recomendado)
+Instale pre-commit e ative o conjunto de hooks configurado:
+```bash
+pip install pre-commit detect-secrets ruff
+pre-commit install
+```
+Isso executará checagens de formatação, lint e varredura de segredos em cada commit.
+
 ## Dicas e solução de problemas
 - Execução de script bloqueada (Windows PowerShell):
   ```powershell

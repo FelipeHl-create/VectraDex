@@ -12,15 +12,26 @@ Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 try:
 	# Usuário admin
-	admin = db.query(User).filter(User.email == "admin@local").first()
+	admin = db.query(User).filter(User.email == "admin@empresa.com.br").first()
 	if not admin:
 		admin = User(
 			name="Admin",
-			email="admin@local",
+			email="admin@empresa.com.br",
 			hashed_password=hash_password("Admin123!"),
 			role=UserRole.admin,
 		)
 		db.add(admin)
+
+	# Usuário operador (restrito)
+	oper = db.query(User).filter(User.email == "usuario.id@empresa.com.br").first()
+	if not oper:
+		oper = User(
+			name="Operador",
+			email="usuario.id@empresa.com.br",
+			hashed_password=hash_password("User123!"),
+			role=UserRole.operador,
+		)
+		db.add(oper)
 
 	# Produto exemplo
 	p = db.query(Product).filter(Product.code == "P001").first()

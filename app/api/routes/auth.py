@@ -47,7 +47,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # altere para True em produção com HTTPS
+        secure=False if not __import__('app.core.config', fromlist=['settings']).core.config.settings.COOKIE_SECURE else True,
         samesite="Lax",
         max_age=60 * 60 * 2,
         path="/",

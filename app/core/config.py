@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     DATABASE_URL: str = "sqlite:///./vectradex.db"
     CORS_ORIGINS: str = ""
+    COOKIE_SECURE: bool = False
+    HSTS_ENABLED: bool = False
     # Segredo separado para fluxo de recuperação de senha
     PASSWORD_RESET_SECRET: str | None = None
 
