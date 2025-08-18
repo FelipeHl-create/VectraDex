@@ -68,6 +68,10 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         _register_attempt(key_ip, False)
         _register_attempt(key_user, False)
+        import logging
+        logging.getLogger("auth").warning(
+            f"login_failed ip={ip} user={data.email}"
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
     _attempts.pop(key_user, None)
     _lockout_until.pop(key_user, None)

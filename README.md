@@ -93,6 +93,9 @@ pre-commit install
 ```
 Isso executará checagens de formatação, lint e varredura de segredos em cada commit.
 
+### Log estruturado
+Ative logs JSON definindo `LOG_JSON=True` no `.env`. Eventos de falhas de login são registrados para auditoria.
+
 ## Dicas e solução de problemas
 - Execução de script bloqueada (Windows PowerShell):
   ```powershell

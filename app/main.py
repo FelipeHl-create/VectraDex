@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+import logging, json, sys
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -15,6 +16,34 @@ from .db.base import Base
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="VectraDex API", version="1.0.0")
+
+# Logging configurável (JSON opcional)
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "level": record.levelname,
+            "name": record.name,
+            "message": record.getMessage(),
+            "time": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%SZ"),
+        }
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+def _setup_logging():
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    # limpar handlers existentes (evita duplicado em reload)
+    for h in list(root.handlers):
+        root.removeHandler(h)
+    handler = logging.StreamHandler(sys.stdout)
+    if settings.LOG_JSON:
+        handler.setFormatter(_JsonFormatter())
+    else:
+        handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s"))
+    root.addHandler(handler)
+
+_setup_logging()
 
 # CORS
 origins = [o.strip() for o in settings.CORS_ORIGINS.split(",")] if settings.CORS_ORIGINS else []
