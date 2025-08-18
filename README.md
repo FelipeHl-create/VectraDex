@@ -33,18 +33,9 @@ Páginas da interface:
 
 APIs: `http://localhost:8000/docs`
 
-## Configuração por ambiente
-Crie um arquivo `.env` na raiz do projeto (use como referência os campos abaixo) e NUNCA commit esse arquivo:
-```
-# Omitir para gerar segredo aleatório em runtime (recomendado em dev)
-SECRET_KEY=
-PASSWORD_RESET_SECRET=
-ACCESS_TOKEN_EXPIRE_MINUTES=120
-ALGORITHM=HS256
-DATABASE_URL=sqlite:///./vectradex.db
-# Produção: defina apenas domínios confiáveis (ex.: https://app.suaempresa.com)
-CORS_ORIGINS=http://localhost:8000
-```
+## Configuração por ambiente (sem expor segredos)
+Configure as variáveis de ambiente diretamente no sistema/servidor (ou via Secret Store/CI). Não commite arquivos `.env`.
+Variáveis esperadas (apenas nomes, sem valores): `SECRET_KEY`, `PASSWORD_RESET_SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `ALGORITHM`, `DATABASE_URL`, `CORS_ORIGINS`, `COOKIE_SECURE`, `HSTS_ENABLED`, `FORCE_HTTPS`, `LOG_JSON`, `LOG_LEVEL`, `LOG_FILE`, `LOG_MAX_BYTES`, `LOG_BACKUP_COUNT`, `WEBHOOK_URL`, `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `LOGIN_LOCKOUT_SECONDS`.
 
 ## Estrutura do projeto
 ```
@@ -94,18 +85,8 @@ pre-commit install
 Isso executará checagens de formatação, lint e varredura de segredos em cada commit.
 
 ### Log estruturado
-Ative logs JSON definindo `LOG_JSON=True` no `.env`. Configure nível/arquivo rotativo:
-```
-LOG_JSON=True
-LOG_LEVEL=INFO
-LOG_FILE=logs/app.log
-LOG_MAX_BYTES=1048576
-LOG_BACKUP_COUNT=5
-```
-Webhook opcional para alertas (ex.: Discord/Slack):
-```
-WEBHOOK_URL=https://seu-webhook
-```
+- Ative via variáveis: `LOG_JSON`, `LOG_LEVEL`, `LOG_FILE`, `LOG_MAX_BYTES`, `LOG_BACKUP_COUNT`.
+- Para alertas, defina `WEBHOOK_URL` no ambiente (não publique essa URL).
 
 ## Dicas e solução de problemas
 - Execução de script bloqueada (Windows PowerShell):
