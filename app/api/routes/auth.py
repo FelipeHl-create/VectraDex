@@ -80,6 +80,12 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
                 httpx.post(settings.WEBHOOK_URL, json={"event": "login_failed", "ip": ip, "user": data.email})
             except Exception:
                 logging.getLogger("auth").debug("webhook_failed")
+        # métrica
+        try:
+            from ...main import login_fail_counter
+            login_fail_counter.labels(reason="invalid_credentials").inc()
+        except Exception:
+            pass
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
     _attempts.pop(key_user, None)
     _lockout_until.pop(key_user, None)

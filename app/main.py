@@ -3,6 +3,8 @@ import logging, json, sys
 from logging.handlers import RotatingFileHandler
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter
 from fastapi.responses import HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -86,6 +88,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Prometheus metrics
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+login_fail_counter = Counter("vd_login_failures_total", "Falhas de login", ["reason"])  # invalid_credentials|rate_limited
 
 # Static e Templates (UI simples)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from prometheus_client import Histogram
 from sqlalchemy import func
 from ...models.machine import ProductionEvent, StopReason
 from ...models.product import Product
@@ -48,6 +49,8 @@ def metrics(db: Session = Depends(get_db)):
 
 
 @router.get("/timeseries", dependencies=[Depends(require_roles(UserRole.admin, UserRole.gerente, UserRole.operador))])
+_ts_hist = Histogram("vd_timeseries_seconds", "Tempo de geração das séries de tempo", ["endpoint"])
+
 def timeseries(
     db: Session = Depends(get_db),
     days: int = Query(default=14, ge=1, le=90),
@@ -55,7 +58,8 @@ def timeseries(
     now = datetime.utcnow()
     start = now - timedelta(days=days)
     # Produção por dia
-    rows = (
+    with _ts_hist.labels(endpoint="produced").time():
+        rows = (
         db.query(
             func.date(ProductionEvent.started_at),
             func.sum(ProductionEvent.quantity),
@@ -64,11 +68,12 @@ def timeseries(
         .group_by(func.date(ProductionEvent.started_at))
         .order_by(func.date(ProductionEvent.started_at))
         .all()
-    )
+        )
     labels = [r[0] for r in rows]
     values = [int(r[1] or 0) for r in rows]
     # Paradas por dia
-    stop_rows = (
+    with _ts_hist.labels(endpoint="stops").time():
+        stop_rows = (
         db.query(
             func.date(ProductionEvent.started_at),
             func.count(ProductionEvent.id),
@@ -77,7 +82,7 @@ def timeseries(
         .group_by(func.date(ProductionEvent.started_at))
         .order_by(func.date(ProductionEvent.started_at))
         .all()
-    )
+        )
     stop_labels = [r[0] for r in stop_rows]
     stop_values = [int(r[1] or 0) for r in stop_rows]
     return {
