@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     HSTS_ENABLED: bool = False
     FORCE_HTTPS: bool = False
     LOG_JSON: bool = True
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str | None = None
+    LOG_MAX_BYTES: int = 1048576  # 1MB
+    LOG_BACKUP_COUNT: int = 5
+    WEBHOOK_URL: str | None = None
     # Rate limiting login
     LOGIN_MAX_ATTEMPTS: int = 5
     LOGIN_WINDOW_SECONDS: int = 600  # 10min

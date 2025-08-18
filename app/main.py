@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 import logging, json, sys
+from logging.handlers import RotatingFileHandler
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -32,7 +33,8 @@ class _JsonFormatter(logging.Formatter):
 
 def _setup_logging():
     root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+    root.setLevel(level)
     # limpar handlers existentes (evita duplicado em reload)
     for h in list(root.handlers):
         root.removeHandler(h)
@@ -42,6 +44,14 @@ def _setup_logging():
     else:
         handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s"))
     root.addHandler(handler)
+    # arquivo rotativo opcional
+    if settings.LOG_FILE:
+        file_handler = RotatingFileHandler(settings.LOG_FILE, maxBytes=settings.LOG_MAX_BYTES, backupCount=settings.LOG_BACKUP_COUNT)
+        if settings.LOG_JSON:
+            file_handler.setFormatter(_JsonFormatter())
+        else:
+            file_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s"))
+        root.addHandler(file_handler)
 
 _setup_logging()
 

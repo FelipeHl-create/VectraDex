@@ -94,7 +94,18 @@ pre-commit install
 Isso executará checagens de formatação, lint e varredura de segredos em cada commit.
 
 ### Log estruturado
-Ative logs JSON definindo `LOG_JSON=True` no `.env`. Eventos de falhas de login são registrados para auditoria.
+Ative logs JSON definindo `LOG_JSON=True` no `.env`. Configure nível/arquivo rotativo:
+```
+LOG_JSON=True
+LOG_LEVEL=INFO
+LOG_FILE=logs/app.log
+LOG_MAX_BYTES=1048576
+LOG_BACKUP_COUNT=5
+```
+Webhook opcional para alertas (ex.: Discord/Slack):
+```
+WEBHOOK_URL=https://seu-webhook
+```
 
 ## Dicas e solução de problemas
 - Execução de script bloqueada (Windows PowerShell):

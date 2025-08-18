@@ -72,6 +72,14 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
         logging.getLogger("auth").warning(
             f"login_failed ip={ip} user={data.email}"
         )
+        # webhook opcional
+        from ...core.config import settings
+        if settings.WEBHOOK_URL:
+            try:
+                import httpx
+                httpx.post(settings.WEBHOOK_URL, json={"event": "login_failed", "ip": ip, "user": data.email})
+            except Exception:
+                logging.getLogger("auth").debug("webhook_failed")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
     _attempts.pop(key_user, None)
     _lockout_until.pop(key_user, None)
